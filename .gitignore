@@ -1,0 +1,145 @@
+
+# Gradle 빌드 관련
+.gradle/
+build/
+gradle-app.setting
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+gradle/wrapper/gradle-wrapper.jar
+
+# JAR/WAR 파일
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# 빌드 아티팩트
+target/
+out/
+bin/
+
+# IDE 관련 파일들
+## IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+
+## Eclipse
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+## VS Code
+.vscode/
+
+## NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# 로그 파일
+logs/
+*.log
+spring.log
+application.log
+
+# 환경 설정 파일 (보안)
+.env
+.env.local
+.env.dev
+.env.prod
+application-local.properties
+application-secret.properties
+
+# 데이터베이스 파일
+*.db
+*.sqlite
+*.h2.db
+data/
+
+# 임시 파일
+*.tmp
+*.bak
+*.swp
+*~.nib
+*~
+
+# OS 특정 파일
+## macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+## Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+## Linux
+*~
+
+# Spring Boot 특정
+.spring-boot-devtools.properties
+
+# 테스트 관련
+.testcontainers.properties
+
+# Docker 관련 (선택적)
+# Dockerfile
+# docker-compose.yml
+
+# 보안 관련 파일
+keystore.p12
+*.pem
+*.key
+*.crt
+
+# 프로파일링 및 히프 덤프
+*.hprof
+hs_err_pid*
+replay_pid*
+
+# Maven (사용하지 않지만 혹시나)
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# 기타 빌드 도구
+.nb-gradle/
+.gradle-wrapper/
+
+# 테스트 커버리지
+.coverage/
+coverage/
+*.exec
+
+# SonarQube
+.sonar/
+
+# 개발 도구
+.factorypath
+.apt_generated_tests/
+
+# 패키징 관련
+*.original
+
+# 기타
+*.pid
+*.seed
+*.pid.lock

@@ -1,0 +1,79 @@
+# Application settings
+spring:
+  application:
+    name: "${APP_NAME:voyagia-backend}"
+
+  # JPA settings
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+    open-in-view: false
+
+  security:
+    user:
+      name: "${ADMIN_USERNAME}"
+      password: "${ADMIN_PASSWORD}"
+      roles: ADMIN
+
+# Server settings
+server:
+  servlet:
+    context-path: "/api"
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: never
+
+# Logging settings
+logging:
+  pattern:
+    console: "%clr(%d{HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# Actuator settings
+management:
+  endpoints:
+    web:
+      base-path: "/actuator"
+      exposure:
+        include: "health,info,metrics"
+  endpoint:
+    health:
+      show-details: when-authorized
+  info:
+    env:
+      enabled: true
+
+# Application info
+info:
+  app:
+    name: "${APP_NAME:voyagia-backend}"
+    version: "${APP_VERSION:1.0.0}"
+    description: "Voyagia E-Commerce Backend API"
+    java:
+      version: "${java.version}"
+    spring:
+      version: "${spring-boot.version}"
+
+# 📦 Custom Properties for Voyagia Backend
+voyagia:
+  app:
+    name: "${APP_NAME:voyagia-backend}"
+    version: "${APP_VERSION:1.0.0}"
+    description: "Voyagia E-Commerce Backend Platform"
+
+    # Security settings
+    security:
+      username: "${ADMIN_USERNAME}"
+      password: "${ADMIN_PASSWORD}"
+      roles: ["ADMIN", "USER"]
+
+    # JWT settings
+    jwt:
+      secret: "${JWT_SECRET:default-secret-change-in-production}"
+      expiration-ms: 86400000 # 24 hours
+
