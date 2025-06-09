@@ -70,10 +70,15 @@ voyagia:
     security:
       username: "${ADMIN_USERNAME}"
       password: "${ADMIN_PASSWORD}"
-      roles: ["ADMIN", "USER"]
+      roles: [ "ADMIN", "USER" ]
 
     # JWT settings
     jwt:
       secret: "${JWT_SECRET:default-secret-change-in-production}"
       expiration-ms: 86400000 # 24 hours
+
+    database:
+      host: "postgres"
+    redis:
+      host: "redis"
 

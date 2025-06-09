@@ -15,7 +15,22 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        // Health Check route
                         .requestMatchers("/health/**").permitAll()
+
+                        // Actuator route
+                        .requestMatchers("/actuator/**").permitAll()
+
+                        // Test API route
+                        .requestMatchers("/test/**").permitAll()
+
+                        // Authentication api(JWT testing) route
+                        .requestMatchers("/auth/**").permitAll()
+
+                        // Swagger/API route
+                        .requestMatchers("/swagger-ui/**").permitAll()
+                        .requestMatchers("/v3/api-docs/**").permitAll()
+
                         .anyRequest().authenticated()
                 );
 
