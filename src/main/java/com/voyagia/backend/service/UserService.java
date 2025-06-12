@@ -26,7 +26,7 @@ public interface UserService {
      * @return found user
      * @throws UserNotFoundException user not found
      */
-    User findById(long id);
+    User findById(Long id);
 
     /**
      * Find user by ID(return Optional)
