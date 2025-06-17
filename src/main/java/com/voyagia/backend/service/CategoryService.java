@@ -95,7 +95,7 @@ public interface CategoryService {
      * @param id category ID
      * @throws CategoryNotFoundException category not found
      */
-    void deletedCategory(Long id);
+    void deleteCategory(Long id);
 
     /**
      * Delete category permanently
