@@ -14,7 +14,6 @@ import java.util.stream.Collectors;
  */
 @Component
 public class UserDTOMapper {
-
     /**
      * UserRegistrationRequest DTO to User Entity
      *
