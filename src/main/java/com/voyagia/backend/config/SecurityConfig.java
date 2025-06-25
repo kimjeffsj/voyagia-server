@@ -48,7 +48,7 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**").permitAll()
 
                         // User registration route - No authentication required (signup)
-                        .requestMatchers("/api/users/register").permitAll()
+                        .requestMatchers("/users/register").permitAll()
 
                         // Swagger/API route - No authentication required (development env)
                         .requestMatchers("/swagger-ui/**").permitAll()

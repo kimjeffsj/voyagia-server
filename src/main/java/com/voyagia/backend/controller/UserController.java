@@ -26,7 +26,7 @@ import java.util.Map;
  * Sign up, sign in, profile management, search user
  */
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/users")
 @CrossOrigin(origins = "*", maxAge = 3600)
 public class UserController {
 
