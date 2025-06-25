@@ -1,6 +1,7 @@
 # Server settings
 server:
   port: 8080
+  servlet:
 
 # Database settings
 spring:
@@ -70,6 +71,23 @@ management:
       enabled: true
     db:
       enabled: true
+
+# JWT & Security Configuration
+app:
+  jwt:
+    secret: "${JWT_SECRET}"
+    expiration: ${JWT_EXPIRATION:86400}
+    issuer: "${JWT_ISSUER:voyagia-backend-docker}"
+    audience: "${JWT_AUDIENCE:voyagia-users}"
+
+  # CORS config
+  cors:
+    allowed-origins: "${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173,http://frontend:3000,http://frontend:5173}"
+    allowed-methods: "${CORS_ALLOWED_METHODS:GET,POST,PUT,DELETE,PATCH,OPTIONS}"
+    allowed-headers: "${CORS_ALLOWED_HEADERS:*}"
+    exposed-headers: "${CORS_EXPOSED_HEADERS:Authorization,Content-Type}"
+    allow-credentials: ${CORS_ALLOW_CREDENTIALS:true}
+    max-age: ${CORS_MAX_AGE:3600}
 
 # 📦 Custom Properties
 voyagia:

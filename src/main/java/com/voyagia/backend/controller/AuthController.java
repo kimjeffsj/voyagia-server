@@ -40,7 +40,7 @@ public class AuthController {
     private final UserService userService;
     private final UserDTOMapper userDTOMapper;
     private final PasswordEncoder passwordEncoder;
-    private JwtUtil jwtUtil;
+    private final JwtUtil jwtUtil;
 
     public AuthController(UserService userService, UserDTOMapper userDTOMapper, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
         this.userService = userService;

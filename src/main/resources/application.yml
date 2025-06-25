@@ -59,6 +59,22 @@ info:
     spring:
       version: "${spring-boot.version}"
 
+app:
+  jwt:
+    secret: "${JWT_SECRET:default-secret-change-in-production}"
+    expiration: 86400 # 24 hours in seconds
+    issuer: "${JWT_ISSUER:voyagia-backend}"
+    audience: "${JWT_AUDIENCE:voyagia-users}"
+
+  # CORS config
+  cors:
+    allowed-origins: "${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}"
+    allowed-methods: "${CORS_ALLOWED_METHODS:GET,POST,PUT,DELETE,PATCH,OPTIONS}"
+    allowed-headers: "${CORS_ALLOWED_HEADERS:*}"
+    exposed-headers: "${CORS_EXPOSED_HEADERS:Authorization,Content-Type}"
+    allow-credentials: ${CORS_ALLOW_CREDENTIALS:true}
+    max-age: ${CORS_MAX_AGE:3600}
+
 # 📦 Custom Properties for Voyagia Backend
 voyagia:
   app:
@@ -70,15 +86,9 @@ voyagia:
     security:
       username: "${ADMIN_USERNAME}"
       password: "${ADMIN_PASSWORD}"
-      roles: [ "ADMIN", "USER" ]
-
-    # JWT settings
-    jwt:
-      secret: "${JWT_SECRET:default-secret-change-in-production}"
-      expiration-ms: 86400000 # 24 hours
+      roles: ["ADMIN", "USER"]
 
     database:
       host: "postgres"
     redis:
       host: "redis"
-
