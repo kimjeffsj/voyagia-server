@@ -46,6 +46,7 @@ bin/
 /dist/
 /nbdist/
 /.nb-gradle/
+docs/
 
 # 로그 파일
 logs/
