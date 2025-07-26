@@ -1,6 +1,5 @@
 package com.voyagia.backend.exception;
 
-
 /**
  * Insufficient Stock exception
  * <p>
@@ -16,9 +15,10 @@ public class InsufficientStockException extends RuntimeException {
     private final Integer requestedQuantity;
     private final Integer availableQuantity;
 
-    public InsufficientStockException(Long productId, String productName, Integer requestedQuantity, Integer availableQuantity) {
+    public InsufficientStockException(Long productId, String productName, Integer requestedQuantity,
+            Integer availableQuantity) {
         super(String.format("Insufficient stock for product '%s' (ID: %d). " +
-                        "Requested: %d, Available: %d",
+                "Requested: %d, Available: %d",
                 productName, productId, requestedQuantity, availableQuantity));
         this.productId = productId;
         this.productName = productName;
@@ -28,12 +28,20 @@ public class InsufficientStockException extends RuntimeException {
 
     public InsufficientStockException(String productName, Integer requestedQuantity, Integer availableQuantity) {
         super(String.format("Insufficient stock for product '%s'. " +
-                        "Requested: %d, Available: %d",
+                "Requested: %d, Available: %d",
                 productName, requestedQuantity, availableQuantity));
         this.productId = null;
         this.productName = productName;
         this.requestedQuantity = requestedQuantity;
         this.availableQuantity = availableQuantity;
+    }
+
+    public InsufficientStockException(String message) {
+        super(message);
+        this.productId = null;
+        this.productName = null;
+        this.requestedQuantity = null;
+        this.availableQuantity = null;
     }
 
     public InsufficientStockException(String message, Throwable cause) {
