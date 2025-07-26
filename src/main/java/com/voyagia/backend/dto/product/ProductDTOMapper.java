@@ -64,7 +64,7 @@ public class ProductDTOMapper {
      * @return ProductResponse DTO
      */
     public ProductResponse toResponse(Product product) {
-        if (product != null) {
+        if (product == null) {
             return null;
         }
 
@@ -258,7 +258,7 @@ public class ProductDTOMapper {
      * @return Simplified ProductResponse DTO list
      */
     public List<ProductResponse> toSummaryResponseList(List<Product> products) {
-        if (products != null) {
+        if (products == null) {
             return null;
         }
 
