@@ -1,4 +1,4 @@
-# Application settings - 수정된 버전
+# Application settings
 spring:
   application:
     name: "${APP_NAME:voyagia-backend}"
@@ -19,36 +19,20 @@ spring:
       password: "${ADMIN_PASSWORD}"
       roles: ADMIN
 
-# Server settings - 🔧 인코딩 설정 추가
+# Server settings
 server:
   servlet:
     context-path: "/api"
-    # 🔧 수정: UTF-8 인코딩 설정 추가 (한글 검색 문제 해결)
-    encoding:
-      charset: UTF-8
-      enabled: true
-      force: true
   error:
     include-message: always
     include-binding-errors: always
     include-stacktrace: never
-  # 🔧 수정: HTTP 인코딩 설정 추가
-  http:
-    encoding:
-      charset: UTF-8
-      enabled: true
-      force: true
 
 # Logging settings
 logging:
   pattern:
     console: "%clr(%d{HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n"
     file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
-  # 🔧 수정: 로깅 레벨 조정 (디버깅을 위해)
-  level:
-    com.voyagia.backend: DEBUG
-    org.springframework.web: DEBUG
-    org.hibernate.SQL: DEBUG
 
 # Actuator settings
 management:
@@ -82,7 +66,7 @@ app:
     issuer: "${JWT_ISSUER:voyagia-backend}"
     audience: "${JWT_AUDIENCE:voyagia-users}"
 
-  # CORS config - 🔧 수정: 한글 처리를 위한 설정 추가
+  # CORS config
   cors:
     allowed-origins: "${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}"
     allowed-methods: "${CORS_ALLOWED_METHODS:GET,POST,PUT,DELETE,PATCH,OPTIONS}"
@@ -108,39 +92,3 @@ voyagia:
       host: "postgres"
     redis:
       host: "redis"
-
-# 🔧 새로 추가: 한글 처리를 위한 추가 설정
----
-spring:
-  config:
-    activate:
-      on-profile: "!docker"
-  # 🔧 수정: HTTP 메시지 컨버터 설정 (한글 처리)
-  http:
-    converters:
-      preferred-json-mapper: jackson
-  jackson:
-    default-property-inclusion: NON_NULL
-    serialization:
-      write-dates-as-timestamps: false
-    deserialization:
-      accept-single-value-as-array: true
-
-# 🔧 새로 추가: 성능 최적화를 위한 설정
----
-spring:
-  config:
-    activate:
-      on-profile: "performance"
-  jpa:
-    properties:
-      hibernate:
-        # 🔧 배치 처리 최적화
-        jdbc:
-          batch_size: 25
-          batch_versioned_data: true
-        # 🔧 쿼리 최적화
-        order_inserts: true
-        order_updates: true
-        # 🔧 통계 수집 비활성화 (성능 향상)
-        generate_statistics: false
