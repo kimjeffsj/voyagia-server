@@ -61,6 +61,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             // 1. 요청에서 JWT 토큰 추출
             String jwt = getJwtFromRequest(request);
+            logger.info("JWT token extracted: {}", jwt != null ? "present" : "missing");
 
             // 2. 토큰이 있고 현재 SecurityContext에 인증 정보가 없는 경우
             if (StringUtils.hasText(jwt) && SecurityContextHolder.getContext().getAuthentication() == null) {
@@ -68,6 +69,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 // 3. 토큰에서 사용자 정보 추출
                 String username = jwtUtil.getUsernameFromToken(jwt);
                 Long userId = jwtUtil.getUserIdFromToken(jwt);
+                logger.info("JWT token parsed - username: {}, userId: {}", username, userId);
 
                 if (StringUtils.hasText(username) && userId != null) {
 
@@ -99,7 +101,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                 // 10. SecurityContext에 인증 정보 설정
                                 SecurityContextHolder.getContext().setAuthentication(authToken);
 
-                                logger.debug("JWT authentication successful for user: {} (ID: {})",
+                                logger.info("JWT authentication successful for user: {} (ID: {})",
                                         username, userId);
 
                             } else {
@@ -140,9 +142,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      */
     private String getJwtFromRequest(HttpServletRequest request) {
         String bearerToken = request.getHeader(AUTHORIZATION_HEADER);
+        logger.info("Authorization header (full): '{}'", bearerToken);
+        logger.info("Authorization header length: {}", bearerToken != null ? bearerToken.length() : 0);
+        logger.info("BEARER_PREFIX: '{}'", BEARER_PREFIX);
+        logger.info("Starts with Bearer: {}", bearerToken != null ? bearerToken.startsWith(BEARER_PREFIX) : "null token");
 
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(BEARER_PREFIX)) {
-            return bearerToken.substring(BEARER_PREFIX.length());
+            String extractedToken = bearerToken.substring(BEARER_PREFIX.length());
+            logger.info("Extracted token: {}", extractedToken != null ? extractedToken.substring(0, Math.min(20, extractedToken.length())) + "..." : "null");
+            return extractedToken;
         }
 
         return null;

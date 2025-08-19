@@ -41,10 +41,37 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
 
     @Query("SELECT c FROM Category c WHERE c.parent.id = :parentId ORDER BY c.sortOrder")
     List<Category> findByParentIdOrderBySortOrder(@Param("parentId") Long parentId);
+    
+    // Alternative query without using parent.id navigation - use native SQL
+    @Query(value = "SELECT * FROM categories WHERE parent_id = :parentId ORDER BY sort_order", nativeQuery = true)
+    List<Category> findChildrenByParentId(@Param("parentId") Long parentId);
 
-    // Search
-    @Query("SELECT c FROM Category c WHERE " +
+    // Search - improved with active filter and slug search
+    @Query("SELECT c FROM Category c WHERE c.isActive = true AND (" +
             "LOWER(c.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-            "LOWER(c.description) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+            "LOWER(c.description) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(c.slug) LIKE LOWER(CONCAT('%', :searchTerm, '%')))")
     Page<Category> searchCategories(@Param("searchTerm") String searchTerm, Pageable pageable);
+
+    // Advanced search with multiple criteria
+    @Query("SELECT c FROM Category c WHERE " +
+            "(:activeOnly = false OR c.isActive = true) AND " +
+            "(:searchTerm IS NULL OR :searchTerm = '' OR " +
+            "LOWER(c.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(c.description) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(c.slug) LIKE LOWER(CONCAT('%', :searchTerm, '%'))) " +
+            "ORDER BY c.sortOrder ASC")
+    Page<Category> searchCategoriesAdvanced(@Param("searchTerm") String searchTerm, 
+                                           @Param("activeOnly") boolean activeOnly, 
+                                           Pageable pageable);
+
+    // Fetch JOIN queries to solve lazy loading issues
+    @Query("SELECT c FROM Category c LEFT JOIN FETCH c.parent LEFT JOIN FETCH c.children WHERE c.id = :id")
+    Optional<Category> findByIdWithParentAndChildren(@Param("id") Long id);
+
+    @Query("SELECT c FROM Category c LEFT JOIN FETCH c.parent WHERE c.slug = :slug")
+    Optional<Category> findBySlugWithParent(@Param("slug") String slug);
+
+    @Query("SELECT c FROM Category c LEFT JOIN FETCH c.parent WHERE c.name = :name")
+    Optional<Category> findByNameWithParent(@Param("name") String name);
 }

@@ -125,6 +125,14 @@ public interface CategoryService {
     Page<Category> findAllActiveCategoriesWithPagination(Pageable pageable);
 
     /**
+     * Query all categories (paginated)
+     *
+     * @param pageable paging information
+     * @return all categories list (paginated)
+     */
+    Page<Category> findAllCategoriesWithPagination(Pageable pageable);
+
+    /**
      * Query root categories
      *
      * @return root categories list
@@ -248,6 +256,16 @@ public interface CategoryService {
      * @return page of searched categories
      */
     Page<Category> searchCategories(String keyword, Pageable pageable);
+
+    /**
+     * Advanced search categories with multiple criteria.
+     *
+     * @param keyword    search keyword
+     * @param activeOnly search only active categories
+     * @param pageable   paging information
+     * @return page of searched categories
+     */
+    Page<Category> searchCategoriesAdvanced(String keyword, boolean activeOnly, Pageable pageable);
 
     /**
      * Find categories by specific depth.

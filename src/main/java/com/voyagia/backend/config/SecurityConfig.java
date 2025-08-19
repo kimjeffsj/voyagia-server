@@ -123,6 +123,9 @@ public class SecurityConfig {
                                                 // 상품 조회 (공개)
                                                 .requestMatchers(HttpMethod.GET, "/products/**").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/categories/**").permitAll()
+                                                
+                                                // 상품 검색 (공개)
+                                                .requestMatchers(HttpMethod.POST, "/products/search/**").permitAll()
 
                                                 // 상품 관리 (관리자만)
                                                 .requestMatchers(HttpMethod.POST, "/products/**").hasRole("ADMIN")

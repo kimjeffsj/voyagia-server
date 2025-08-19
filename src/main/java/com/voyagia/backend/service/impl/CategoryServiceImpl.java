@@ -77,7 +77,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public Category findById(Long id) {
         logger.debug("Find category by ID: {}", id);
-        return categoryRepository.findById(id)
+        return categoryRepository.findByIdWithParentAndChildren(id)
                 .orElseThrow(() -> new CategoryNotFoundException(id));
     }
 
@@ -90,7 +90,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public Category findBySlug(String slug) {
         logger.debug("Find category by slug: {}", slug);
-        return categoryRepository.findBySlug(slug)
+        return categoryRepository.findBySlugWithParent(slug)
                 .orElseThrow(() -> new CategoryNotFoundException(slug, "slug"));
     }
 
@@ -103,7 +103,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public Category findByName(String name) {
         logger.debug("Find category by name: {}", name);
-        return categoryRepository.findByName(name)
+        return categoryRepository.findByNameWithParent(name)
                 .orElseThrow(() -> new CategoryNotFoundException(name, "name"));
     }
 
@@ -135,7 +135,8 @@ public class CategoryServiceImpl implements CategoryService {
         // When parent changes validate
         if (categoryDetails.getParent() != null) {
             Long newParentId = categoryDetails.getParent().getId();
-            if (!Objects.equals(existingCategory.getParent().getId(), newParentId)) {
+            Long currentParentId = existingCategory.getParent() != null ? existingCategory.getParent().getId() : null;
+            if (!Objects.equals(currentParentId, newParentId)) {
                 validateCircularReference(id, newParentId);
                 validateCategoryDepth(newParentId);
             }
@@ -199,6 +200,13 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    public Page<Category> findAllCategoriesWithPagination(Pageable pageable) {
+        logger.debug("Query all categories (paginated): page={}, size={}",
+                pageable.getPageNumber(), pageable.getPageSize());
+        return categoryRepository.findAll(pageable);
+    }
+
+    @Override
     public List<Category> findRootCategories() {
         logger.debug("Query root category");
         return categoryRepository.findRootCategories();
@@ -208,12 +216,11 @@ public class CategoryServiceImpl implements CategoryService {
     public List<Category> findChildrenByParentId(Long parentId) {
         logger.debug("Query sub categories: parentId={}", parentId);
 
-        // Check parent category
-        if (!categoryRepository.existsById(parentId)) {
-            throw new CategoryNotFoundException(parentId);
-        }
-
-        return categoryRepository.findByParentIdOrderBySortOrder(parentId);
+        List<Category> children = categoryRepository.findChildrenByParentId(parentId);
+        
+        // If no children found and we want to be strict, we could check if parent exists
+        // But for now, just return empty list if no children found
+        return children;
     }
 
     @Override
@@ -263,14 +270,16 @@ public class CategoryServiceImpl implements CategoryService {
     public Category moveCategory(Long categoryId, Long newParentId) {
         logger.info("Move category: categoryId={}, newParentId={}", categoryId, newParentId);
 
-        Category category = findById(categoryId);
+        Category category = categoryRepository.findByIdWithParentAndChildren(categoryId)
+                .orElseThrow(() -> new CategoryNotFoundException(categoryId));
 
         // Validate new parent
         if (newParentId != null) {
             validateCircularReference(categoryId, newParentId);
             validateCategoryDepth(newParentId);
 
-            Category newParent = findById(newParentId);
+            Category newParent = categoryRepository.findByIdWithParentAndChildren(newParentId)
+                    .orElseThrow(() -> new CategoryNotFoundException(newParentId));
             category.setParent(newParent);
         } else {
             category.setParent(null); // Move to root
@@ -302,6 +311,22 @@ public class CategoryServiceImpl implements CategoryService {
     @Transactional
     public void reorderCategories(Long parentId, List<Long> categoryIds) {
         logger.info("Bulk reorder categories: parentId={}, categoryIds={}", parentId, categoryIds);
+
+        // Validate parent exists if not null
+        if (parentId != null && !categoryRepository.existsById(parentId)) {
+            throw new CategoryNotFoundException(parentId);
+        }
+
+        // Validate all category IDs exist and belong to the same parent
+        for (Long categoryId : categoryIds) {
+            Category category = categoryRepository.findById(categoryId)
+                    .orElseThrow(() -> new CategoryNotFoundException(categoryId));
+            
+            Long categoryParentId = category.getParent() != null ? category.getParent().getId() : null;
+            if (!Objects.equals(categoryParentId, parentId)) {
+                throw new InvalidCategoryDataException("Category " + categoryId + " does not belong to parent " + parentId);
+            }
+        }
 
         for (int i = 0; i < categoryIds.size(); i++) {
             updateSortOrder(categoryIds.get(i), i + 1);
@@ -373,6 +398,13 @@ public class CategoryServiceImpl implements CategoryService {
         }
 
         return categoryRepository.searchCategories(keyword, pageable);
+    }
+
+    @Override
+    public Page<Category> searchCategoriesAdvanced(String keyword, boolean activeOnly, Pageable pageable) {
+        logger.debug("Advanced search categories: keyword={}, activeOnly={}", keyword, activeOnly);
+
+        return categoryRepository.searchCategoriesAdvanced(keyword, activeOnly, pageable);
     }
 
     @Override

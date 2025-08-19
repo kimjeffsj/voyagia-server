@@ -294,6 +294,16 @@ public class ProductController {
             @RequestParam(defaultValue = "desc") String direction) {
 
         logger.debug("Search products: keyword={}, page={}, size={}", keyword, page, size);
+        
+        try {
+            // URL 디코딩 처리 (한글 검색어 지원)
+            String decodedKeyword = java.net.URLDecoder.decode(keyword, "UTF-8");
+            logger.debug("Decoded keyword: {}", decodedKeyword);
+            keyword = decodedKeyword;
+        } catch (Exception e) {
+            // 디코딩 실패 시 원본 키워드 사용
+            logger.debug("Keyword decoding failed, using original: {}", keyword);
+        }
 
         try {
             Sort.Direction sortDirection = direction.equalsIgnoreCase("desc") ? Sort.Direction.DESC

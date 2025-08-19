@@ -13,6 +13,13 @@ spring:
           time_zone: UTC
     open-in-view: false
 
+  # HTTP encoding settings
+  http:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
   security:
     user:
       name: "${ADMIN_USERNAME}"
@@ -23,6 +30,15 @@ spring:
 server:
   servlet:
     context-path: "/api"
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+      force-request: true
+      force-response: true
+  tomcat:
+    uri-encoding: UTF-8
+    additional-tld-skip-patterns: "*.jar"
   error:
     include-message: always
     include-binding-errors: always

@@ -222,7 +222,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public List<Product> findLatestProducts(int limit) {
         logger.debug("Find latest products: limit={}", limit);
-        Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "createdAt;"));
+        Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
         // @EntityGraph를 사용하여 Category와 함께 로딩 (LazyInitializationException 방지)
         return productRepository.findLatestProductsWithCategory(pageable).getContent();
     }

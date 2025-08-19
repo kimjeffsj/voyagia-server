@@ -31,13 +31,13 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
         /**
          * ID로 Product 조회 (Category 함께 로딩)
          */
-        @Query("SELECT p FROM Product p JOIN FETCH p.category WHERE p.id = :id")
+        @Query("SELECT p FROM Product p LEFT JOIN FETCH p.category WHERE p.id = :id")
         Optional<Product> findByIdWithCategory(@Param("id") Long id);
 
         /**
          * Slug로 Product 조회 (Category 함께 로딩)
          */
-        @Query("SELECT p FROM Product p JOIN FETCH p.category WHERE p.slug = :slug")
+        @Query("SELECT p FROM Product p LEFT JOIN FETCH p.category WHERE p.slug = :slug")
         Optional<Product> findBySlugWithCategory(@Param("slug") String slug);
 
         /**
@@ -65,8 +65,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
         /**
          * 최신 상품 목록 조회 - Category 함께 로딩
          */
-        @EntityGraph(attributePaths = { "category" })
-        @Query("SELECT p FROM Product p WHERE p.isActive = true ORDER BY p.createdAt DESC")
+        @Query("SELECT p FROM Product p LEFT JOIN FETCH p.category WHERE p.isActive = true ORDER BY p.createdAt DESC")
         Page<Product> findLatestProductsWithCategory(Pageable pageable);
 
         // ========== 카테고리별 조회 (수정됨) ==========
