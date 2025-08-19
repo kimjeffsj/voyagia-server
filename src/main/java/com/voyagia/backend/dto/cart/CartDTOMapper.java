@@ -9,9 +9,12 @@ import com.voyagia.backend.service.UserService;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.stereotype.Component;
+
 /**
  * Cart DTO Mapper
  */
+@Component
 public class CartDTOMapper {
 
     private final UserService userService;

@@ -1,6 +1,8 @@
 package com.voyagia.backend.service;
 
 import com.voyagia.backend.entity.Product;
+import com.voyagia.backend.dto.product.ProductResponse; // DTO 변환 메서드를 위한 import 추가
+import com.voyagia.backend.dto.product.ProductUpdateRequest; // ProductUpdateRequest import 추가
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -12,9 +14,12 @@ import java.util.Optional;
  * Product interface
  * <p>
  * product CRUD, inventory management, query, and filtering.
+ * DTO 변환 메서드들이 추가되어 LazyInitializationException을 방지합니다.
  */
 public interface ProductService {
-    // CRUD
+    // ========================================
+    // CRUD (기존 엔티티 반환 메서드들 - 하위 호환성 유지)
+    // ========================================
 
     /**
      * Create product
@@ -106,8 +111,9 @@ public interface ProductService {
      */
     void deleteProductPermanently(Long id);
 
-
-    // Product Query
+    // ========================================
+    // Product Query (기존 엔티티 반환 메서드들 - 하위 호환성 유지)
+    // ========================================
 
     /**
      * Query active products
@@ -151,8 +157,114 @@ public interface ProductService {
      */
     Page<Product> findByCategoryId(Long categoryId, Pageable pageable);
 
+    // ========================================
+    // DTO 변환 메서드들 (LazyInitializationException 방지)
+    // ========================================
 
-    // Search and filtering
+    /**
+     * ======== 단일 조회 DTO 메서드들 ========
+     * Service 레이어에서 DTO 변환을 수행하여 LazyInitializationException 방지
+     */
+
+    /**
+     * Find product by ID and convert to DTO
+     *
+     * @param id product ID
+     * @return product response DTO
+     * @throws ProductNotFoundException Product not found
+     */
+    ProductResponse findByIdAsDto(Long id);
+
+    /**
+     * Find product by slug and convert to DTO
+     *
+     * @param slug product slug
+     * @return product response DTO
+     * @throws ProductNotFoundException product not found
+     */
+    ProductResponse findBySlugAsDto(String slug);
+
+    /**
+     * Update product from ProductUpdateRequest and return DTO
+     * Controller에서 직접 사용할 수 있는 메서드
+     *
+     * @param id      product ID
+     * @param request update request DTO
+     * @return updated product response DTO
+     * @throws ProductNotFoundException      Product not found
+     * @throws ProductAlreadyExistsException SKU/slug already exists
+     * @throws InvalidProductDataException   Invalid request data
+     */
+    ProductResponse updateProductFromRequest(Long id, ProductUpdateRequest request);
+
+    /**
+     * ======== 목록 조회 DTO 메서드들 ========
+     */
+
+    /**
+     * Query active products and convert to DTO
+     *
+     * @param pageable paging information
+     * @return Paginated active products DTO
+     */
+    Page<ProductResponse> findAllActiveProductsAsDto(Pageable pageable);
+
+    /**
+     * Query featured products and convert to DTO
+     *
+     * @return featured products DTO list
+     */
+    List<ProductResponse> findFeaturedProductsAsDto();
+
+    /**
+     * Query latest products and convert to DTO
+     *
+     * @param limit products number
+     * @return latest products DTO list
+     */
+    List<ProductResponse> findLatestProductsAsDto(int limit);
+
+    /**
+     * ======== 검색/필터 DTO 메서드들 ========
+     */
+
+    /**
+     * Find product by keyword and convert to DTO
+     *
+     * @param keyword  search keyword
+     * @param pageable paging information
+     * @return paginated product DTO list
+     */
+    Page<ProductResponse> searchProductsAsDto(String keyword, Pageable pageable);
+
+    /**
+     * Query products by category and convert to DTO
+     *
+     * @param categoryId category ID
+     * @param pageable   paging information
+     * @return paginated categorized products DTO list
+     */
+    Page<ProductResponse> findByCategoryIdAsDto(Long categoryId, Pageable pageable);
+
+    /**
+     * Filtering and convert to DTO
+     *
+     * @param categoryId category ID (nullable)
+     * @param minPrice   minimum price (nullable)
+     * @param maxPrice   maximum price (nullable)
+     * @param keyword    search keyword (nullable)
+     * @param sortBy     sort by ("name", "price_asc", "price_desc", "latest")
+     * @param pageable   paging information
+     * @return filtered product DTO list
+     */
+    Page<ProductResponse> findWithFiltersAsDto(Long categoryId, BigDecimal minPrice, BigDecimal maxPrice,
+            String keyword, String sortBy, Pageable pageable);
+
+    // ========================================
+    // 기존 메서드들 (하위 호환성을 위해 유지)
+    // ========================================
+
+    // Search and filtering (기존 엔티티 반환 메서드들)
 
     /**
      * Find product by keyword
@@ -176,10 +288,11 @@ public interface ProductService {
      * @return filtered product list
      */
     Page<Product> findWithFilters(Long categoryId, BigDecimal minPrice, BigDecimal maxPrice,
-                                  String keyword, String sortBy, Pageable pageable);
+            String keyword, String sortBy, Pageable pageable);
 
-
-    // Inventory management
+    // ========================================
+    // Inventory management (기존 메서드들 유지)
+    // ========================================
 
     /**
      * Check product's current stock
@@ -236,8 +349,9 @@ public interface ProductService {
      */
     List<Product> findProductsWithStock(Integer minStock);
 
-
-    // Product status management
+    // ========================================
+    // Product status management (기존 메서드들 유지)
+    // ========================================
 
     /**
      * Activate product
@@ -271,8 +385,9 @@ public interface ProductService {
      */
     void unsetAsFeatured(Long id);
 
-
-    // Validate & utilities
+    // ========================================
+    // Validate & utilities (기존 메서드들 유지)
+    // ========================================
 
     /**
      * Check if SKU exists

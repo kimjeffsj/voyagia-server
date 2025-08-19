@@ -3,16 +3,21 @@ package com.voyagia.backend.dto.product;
 import com.voyagia.backend.entity.Category;
 import com.voyagia.backend.entity.Product;
 import com.voyagia.backend.service.CategoryService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Product DTO Mapper
+ * Product DTO Mapper - 안전한 지연 로딩 접근 패턴 적용
  */
 @Component
 public class ProductDTOMapper {
+
+    private static final Logger logger = LoggerFactory.getLogger(ProductDTOMapper.class);
+
     private final CategoryService categoryService;
 
     public ProductDTOMapper(CategoryService categoryService) {
@@ -21,9 +26,6 @@ public class ProductDTOMapper {
 
     /**
      * ProductCreateRequest to Product Entity
-     *
-     * @param request ProductCreateRequest DTO
-     * @return Product Entity
      */
     public Product toEntity(ProductCreateRequest request) {
         if (request == null) {
@@ -58,10 +60,10 @@ public class ProductDTOMapper {
     }
 
     /**
-     * Product Entity to ProductResponse
-     *
-     * @param product Product Entity
-     * @return ProductResponse DTO
+     * Product Entity to ProductResponse - 안전한 Category 접근
+     * 
+     * 주의: 이 메서드는 Category가 이미 로딩된 Product 엔티티에서만 사용해야 합니다.
+     * (JOIN FETCH 또는 @EntityGraph를 통해 로딩된 경우)
      */
     public ProductResponse toResponse(Product product) {
         if (product == null) {
@@ -89,16 +91,83 @@ public class ProductDTOMapper {
         response.setCreatedAt(product.getCreatedAt());
         response.setUpdatedAt(product.getUpdatedAt());
 
-        if (product.getCategory() != null) {
+        // 안전한 Category 접근 - 이미 로딩된 경우에만 접근
+        try {
             Category category = product.getCategory();
-            ProductResponse.CategorySummary categorySummary = new ProductResponse.CategorySummary(
-                    category.getId(),
-                    category.getName(),
-                    category.getSlug()
-            );
-            response.setCategory(categorySummary);
+            if (category != null) {
+                // Category 정보가 실제로 로딩되었는지 확인하기 위해 ID에 접근
+                Long categoryId = category.getId();
+                if (categoryId != null) {
+                    ProductResponse.CategorySummary categorySummary = new ProductResponse.CategorySummary(
+                            category.getId(),
+                            category.getName(),
+                            category.getSlug());
+                    response.setCategory(categorySummary);
+                } else {
+                    logger.warn("Category ID is null for product: {}", product.getId());
+                }
+            }
+        } catch (Exception e) {
+            // LazyInitializationException이 발생한 경우
+            logger.error("Failed to access category for product {}: {}. Category was not properly loaded.",
+                    product.getId(), e.getMessage());
+            // Category 정보 없이 응답 반환
+            response.setCategory(null);
         }
 
+        // 비즈니스 로직 메서드들 (엔티티에 의존하지 않음)
+        response.setInStock(product.isInStock());
+        response.setLowStock(product.isLowStock());
+        response.setHasDiscount(product.hasDiscount());
+        response.setDiscountAmount(product.getDiscountAmount());
+        response.setDiscountPercentage(product.getDiscountPercentage());
+
+        return response;
+    }
+
+    /**
+     * Product Entity to simplified response - 안전한 Category 접근
+     */
+    public ProductResponse toSummaryResponse(Product product) {
+        if (product == null) {
+            return null;
+        }
+
+        ProductResponse response = new ProductResponse();
+        response.setId(product.getId());
+        response.setName(product.getName());
+        response.setShortDescription(product.getShortDescription());
+        response.setSku(product.getSku());
+        response.setSlug(product.getSlug());
+        response.setPrice(product.getPrice());
+        response.setComparePrice(product.getComparePrice());
+        response.setStockQuantity(product.getStockQuantity());
+        response.setIsActive(product.getIsActive());
+        response.setIsFeatured(product.getIsFeatured());
+        response.setMainImageUrl(product.getMainImageUrl());
+
+        // 안전한 Category 접근
+        try {
+            Category category = product.getCategory();
+            if (category != null) {
+                // Category 정보가 실제로 로딩되었는지 확인
+                Long categoryId = category.getId();
+                if (categoryId != null) {
+                    ProductResponse.CategorySummary categorySummary = new ProductResponse.CategorySummary(
+                            category.getId(),
+                            category.getName(),
+                            category.getSlug());
+                    response.setCategory(categorySummary);
+                }
+            }
+        } catch (Exception e) {
+            // LazyInitializationException이 발생한 경우
+            logger.warn("Category not loaded for product {} in summary response: {}",
+                    product.getId(), e.getMessage());
+            response.setCategory(null);
+        }
+
+        // 비즈니스 로직 메서드들
         response.setInStock(product.isInStock());
         response.setLowStock(product.isLowStock());
         response.setHasDiscount(product.hasDiscount());
@@ -110,9 +179,6 @@ public class ProductDTOMapper {
 
     /**
      * Product Entity List to Product Response
-     *
-     * @param products Product Entity List
-     * @return ProductResponse DTO List
      */
     public List<ProductResponse> toResponseList(List<Product> products) {
         if (products == null) {
@@ -125,10 +191,20 @@ public class ProductDTOMapper {
     }
 
     /**
+     * Product Entity list to simplified Product response list
+     */
+    public List<ProductResponse> toSummaryResponseList(List<Product> products) {
+        if (products == null) {
+            return null;
+        }
+
+        return products.stream()
+                .map(this::toSummaryResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Update Product Entity with ProductUpdateRequest data
-     *
-     * @param product Product Entity
-     * @param request update request DTO
      */
     public void updateEntity(Product product, ProductUpdateRequest request) {
         if (product == null || request == null) {
@@ -193,10 +269,7 @@ public class ProductDTOMapper {
     }
 
     /**
-     * ProductUpdateRequest to Product Entity(Create new object)
-     *
-     * @param request Update request DTO
-     * @return Product Entity
+     * ProductUpdateRequest to Product Entity (Create new object)
      */
     public Product toUpdateEntity(ProductUpdateRequest request) {
         if (request == null) {
@@ -209,61 +282,27 @@ public class ProductDTOMapper {
     }
 
     /**
-     * Product Entity to simplified response
-     *
-     * @param product Product Entity
-     * @return simplified ProductResponse
+     * 안전한 Category 로딩 확인 메서드
+     * 
+     * @param product Product 엔티티
+     * @return Category가 로딩되었는지 여부
      */
-    public ProductResponse toSummaryResponse(Product product) {
+    public boolean isCategoryLoaded(Product product) {
         if (product == null) {
-            return null;
+            return false;
         }
 
-        ProductResponse response = new ProductResponse();
-        response.setId(product.getId());
-        response.setName(product.getName());
-        response.setShortDescription(product.getShortDescription());
-        response.setSku(product.getSku());
-        response.setSlug(product.getSlug());
-        response.setPrice(product.getPrice());
-        response.setComparePrice(product.getComparePrice());
-        response.setStockQuantity(product.getStockQuantity());
-        response.setIsActive(product.getIsActive());
-        response.setIsFeatured(product.getIsFeatured());
-        response.setMainImageUrl(product.getMainImageUrl());
-
-        if (product.getCategory() != null) {
+        try {
             Category category = product.getCategory();
-            ProductResponse.CategorySummary categorySummary = new ProductResponse.CategorySummary(
-                    category.getId(),
-                    category.getName(),
-                    category.getSlug()
-            );
-            response.setCategory(categorySummary);
+            if (category != null) {
+                // Category의 ID에 접근해서 실제로 로딩되었는지 확인
+                category.getId();
+                return true;
+            }
+        } catch (Exception e) {
+            logger.debug("Category not loaded for product {}: {}", product.getId(), e.getMessage());
         }
 
-        response.setInStock(product.isInStock());
-        response.setLowStock(product.isLowStock());
-        response.setHasDiscount(product.hasDiscount());
-        response.setDiscountAmount(product.getDiscountAmount());
-        response.setDiscountPercentage(product.getDiscountPercentage());
-
-        return response;
-    }
-
-    /**
-     * Product Entity list to simplified Product response list
-     *
-     * @param products Product Entity List
-     * @return Simplified ProductResponse DTO list
-     */
-    public List<ProductResponse> toSummaryResponseList(List<Product> products) {
-        if (products == null) {
-            return null;
-        }
-
-        return products.stream()
-                .map(this::toSummaryResponse)
-                .collect(Collectors.toList());
+        return false;
     }
 }

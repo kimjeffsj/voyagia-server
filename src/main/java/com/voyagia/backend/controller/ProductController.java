@@ -35,15 +35,21 @@ public class ProductController {
     private static final Logger logger = LoggerFactory.getLogger(ProductController.class);
 
     private final ProductService productService;
-    private final ProductDTOMapper productDTOMapper;
+    private final ProductDTOMapper productDTOMapper; // createProduct, updateProduct를 위해 일시적으로 유지
 
+    /**
+     * ======== 수정된 Constructor ========
+     * ProductDTOMapper는 createProduct, updateProduct에서만 사용하고
+     * 조회 메서드들은 Service에서 DTO 변환 처리
+     */
     public ProductController(ProductService productService, ProductDTOMapper productDTOMapper) {
         this.productService = productService;
-        this.productDTOMapper = productDTOMapper;
+        this.productDTOMapper = productDTOMapper; // 생성/수정 메서드를 위해 유지
     }
 
     /**
      * Create new product
+     * 주의: 이 메서드는 여전히 ProductDTOMapper를 사용 (Request -> Entity 변환을 위해)
      *
      * @param request       create product request DTO
      * @param bindingResult validation result
@@ -52,8 +58,7 @@ public class ProductController {
     @PostMapping
     public ResponseEntity<?> createProduct(
             @Valid @RequestBody ProductCreateRequest request,
-            BindingResult bindingResult
-    ) {
+            BindingResult bindingResult) {
         logger.info("Product creation attempt: name={}, sku={}", request.getName(), request.getSku());
 
         // Validation
@@ -64,26 +69,27 @@ public class ProductController {
         }
 
         try {
+            // ProductDTOMapper를 사용하여 Request -> Entity 변환
             Product product = productDTOMapper.toEntity(request);
             Product savedProduct = productService.createProduct(product);
+            // ProductDTOMapper를 사용하여 Entity -> Response 변환
             ProductResponse response = productDTOMapper.toResponse(savedProduct);
 
             logger.info("Product created successfully: id={}, sku={}",
                     savedProduct.getId(), savedProduct.getSku());
 
             return ResponseEntity.status(HttpStatus.CREATED).body(
-                    ApiResponse.success("Product created successfully", response)
-            );
+                    ApiResponse.success("Product created successfully", response));
         } catch (Exception e) {
             logger.error("Product creation failed: {}", e.getMessage());
             return ResponseEntity.badRequest().body(
-                    ApiResponse.error("Product creation failed: " + e.getMessage())
-            );
+                    ApiResponse.error("Product creation failed: " + e.getMessage()));
         }
     }
 
     /**
-     * Get All Product (Paginated)
+     * Get All Product (Paginated) - 수정됨
+     * Service에서 DTO를 직접 받아서 LazyInitializationException 방지
      *
      * @param page      page number
      * @param size      page size
@@ -98,27 +104,20 @@ public class ProductController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt") String sort,
             @RequestParam(defaultValue = "desc") String direction,
-            @RequestParam(defaultValue = "true") boolean active
-    ) {
+            @RequestParam(defaultValue = "true") boolean active) {
         logger.debug("Get products: page={}, size={}, sort={}, direction={}, active={}",
                 page, size, sort, direction, active);
 
         try {
-            Sort.Direction sortDirection = direction.equalsIgnoreCase("desc") ?
-                    Sort.Direction.DESC : Sort.Direction.ASC;
+            Sort.Direction sortDirection = direction.equalsIgnoreCase("desc") ? Sort.Direction.DESC
+                    : Sort.Direction.ASC;
             Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
 
-            Page<Product> productPage;
-            if (active) {
-                productPage = productService.findAllActiveProducts(pageable);
-            } else {
-                productPage = productService.findAllActiveProducts(pageable);
-            }
-
-            List<ProductResponse> products = productDTOMapper.toSummaryResponseList(productPage.getContent());
+            // Service에서 DTO를 직접 받음 - LazyInitializationException 방지
+            Page<ProductResponse> productPage = productService.findAllActiveProductsAsDto(pageable);
 
             Map<String, Object> response = new HashMap<>();
-            response.put("products", products);
+            response.put("products", productPage.getContent());
             response.put("currentPage", productPage.getNumber());
             response.put("totalItems", productPage.getTotalElements());
             response.put("totalPages", productPage.getTotalPages());
@@ -137,7 +136,8 @@ public class ProductController {
     }
 
     /**
-     * Get product by id
+     * Get product by id - 수정됨
+     * Service에서 DTO를 직접 받아서 LazyInitializationException 방지
      *
      * @param id product Id
      * @return Product detail
@@ -147,28 +147,26 @@ public class ProductController {
         logger.debug("Get product by ID: {}", id);
 
         try {
-            Product product = productService.findById(id);
-            ProductResponse response = productDTOMapper.toResponse(product);
+            // Service에서 DTO를 직접 받음 - LazyInitializationException 방지
+            ProductResponse response = productService.findByIdAsDto(id);
 
             return ResponseEntity.ok(
-                    ApiResponse.success("Product retrieved successfully", response)
-            );
+                    ApiResponse.success("Product retrieved successfully", response));
 
         } catch (ProductNotFoundException e) {
             logger.warn("Product not found: id={}", id);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                    ApiResponse.error("Product not found")
-            );
+                    ApiResponse.error("Product not found"));
         } catch (Exception e) {
             logger.error("Failed to get product: id={}, error={}", id, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    ApiResponse.error("Failed to retrieve product")
-            );
+                    ApiResponse.error("Failed to retrieve product"));
         }
     }
 
     /**
-     * Get Product by slug
+     * Get Product by slug - 수정됨
+     * Service에서 DTO를 직접 받아서 LazyInitializationException 방지
      *
      * @param slug product slug
      * @return product detail
@@ -178,28 +176,26 @@ public class ProductController {
         logger.debug("Get product by slug: {}", slug);
 
         try {
-            Product product = productService.findBySlug(slug);
-            ProductResponse response = productDTOMapper.toResponse(product);
+            // Service에서 DTO를 직접 받음 - LazyInitializationException 방지
+            ProductResponse response = productService.findBySlugAsDto(slug);
 
             return ResponseEntity.ok(
-                    ApiResponse.success("Product retrieved successfully", response)
-            );
+                    ApiResponse.success("Product retrieved successfully", response));
 
         } catch (ProductNotFoundException e) {
             logger.warn("Product not found: slug={}", slug);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                    ApiResponse.error("Product not found")
-            );
+                    ApiResponse.error("Product not found"));
         } catch (Exception e) {
             logger.error("Failed to get product: slug={}, error={}", slug, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    ApiResponse.error("Failed to retrieve product")
-            );
+                    ApiResponse.error("Failed to retrieve product"));
         }
     }
 
     /**
      * Update product
+     * 주의: 이 메서드는 여전히 ProductDTOMapper를 사용합니다 (Request -> Entity 변환을 위해)
      *
      * @param id            product id
      * @param request       update request DTO
@@ -217,40 +213,36 @@ public class ProductController {
         // 검증 오류 처리
         if (bindingResult.hasErrors()) {
             Map<String, String> errors = new HashMap<>();
-            bindingResult.getFieldErrors().forEach(error ->
-                    errors.put(error.getField(), error.getDefaultMessage()));
+            bindingResult.getFieldErrors().forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
             return ResponseEntity.badRequest().body(
-                    ApiResponse.error("Validation failed", errors)
-            );
+                    ApiResponse.error("Validation failed", errors));
         }
 
         // Check updated fields
         if (!request.hasAnyUpdateField()) {
             return ResponseEntity.badRequest().body(
-                    ApiResponse.error("No fields to update")
-            );
+                    ApiResponse.error("No fields to update"));
         }
 
         try {
+            // ProductDTOMapper를 사용하여 Request -> Entity 변환
             Product updateData = productDTOMapper.toUpdateEntity(request);
             Product updatedProduct = productService.updateProduct(id, updateData);
+            // ProductDTOMapper를 사용하여 Entity -> Response 변환
             ProductResponse response = productDTOMapper.toResponse(updatedProduct);
 
             logger.info("Product updated successfully: id={}", id);
             return ResponseEntity.ok(
-                    ApiResponse.success("Product updated successfully", response)
-            );
+                    ApiResponse.success("Product updated successfully", response));
 
         } catch (ProductNotFoundException e) {
             logger.warn("Product not found for update: id={}", id);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                    ApiResponse.error("Product not found")
-            );
+                    ApiResponse.error("Product not found"));
         } catch (Exception e) {
             logger.error("Product update failed: id={}, error={}", id, e.getMessage());
             return ResponseEntity.badRequest().body(
-                    ApiResponse.error("Product update failed: " + e.getMessage())
-            );
+                    ApiResponse.error("Product update failed: " + e.getMessage()));
         }
     }
 
@@ -269,24 +261,22 @@ public class ProductController {
 
             logger.info("Product deleted successfully: id={}", id);
             return ResponseEntity.ok(
-                    ApiResponse.success("Product deleted successfully")
-            );
+                    ApiResponse.success("Product deleted successfully"));
 
         } catch (ProductNotFoundException e) {
             logger.warn("Product not found for deletion: id={}", id);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                    ApiResponse.error("Product not found")
-            );
+                    ApiResponse.error("Product not found"));
         } catch (Exception e) {
             logger.error("Product deletion failed: id={}, error={}", id, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    ApiResponse.error("Product deletion failed")
-            );
+                    ApiResponse.error("Product deletion failed"));
         }
     }
 
     /**
-     * Search product
+     * Search product - 수정됨
+     * Service에서 DTO를 직접 받아서 LazyInitializationException 방지
      *
      * @param keyword   search keyword
      * @param page      page number
@@ -306,15 +296,15 @@ public class ProductController {
         logger.debug("Search products: keyword={}, page={}, size={}", keyword, page, size);
 
         try {
-            Sort.Direction sortDirection = direction.equalsIgnoreCase("desc") ?
-                    Sort.Direction.DESC : Sort.Direction.ASC;
+            Sort.Direction sortDirection = direction.equalsIgnoreCase("desc") ? Sort.Direction.DESC
+                    : Sort.Direction.ASC;
             Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
 
-            Page<Product> productPage = productService.searchProducts(keyword, pageable);
-            List<ProductResponse> products = productDTOMapper.toSummaryResponseList(productPage.getContent());
+            // Service에서 DTO를 직접 받음 - LazyInitializationException 방지
+            Page<ProductResponse> productPage = productService.searchProductsAsDto(keyword, pageable);
 
             Map<String, Object> response = new HashMap<>();
-            response.put("products", products);
+            response.put("products", productPage.getContent());
             response.put("keyword", keyword);
             response.put("currentPage", productPage.getNumber());
             response.put("totalItems", productPage.getTotalElements());
@@ -334,7 +324,8 @@ public class ProductController {
     }
 
     /**
-     * Advanced search
+     * Advanced search - 수정됨
+     * Service에서 DTO를 직접 받아서 LazyInitializationException 방지
      *
      * @param searchRequest search request DTO
      * @param bindingResult Validation
@@ -350,42 +341,35 @@ public class ProductController {
         // Validation
         if (bindingResult.hasErrors()) {
             Map<String, String> errors = new HashMap<>();
-            bindingResult.getFieldErrors().forEach(error ->
-                    errors.put(error.getField(), error.getDefaultMessage()));
+            bindingResult.getFieldErrors().forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
             return ResponseEntity.badRequest().body(
-                    ApiResponse.error("Validation failed", errors)
-            );
+                    ApiResponse.error("Validation failed", errors));
         }
 
         // price range
         if (!searchRequest.isPriceRangeValid()) {
             return ResponseEntity.badRequest().body(
-                    ApiResponse.error("Invalid price range: minimum price cannot be greater than maximum price")
-            );
+                    ApiResponse.error("Invalid price range: minimum price cannot be greater than maximum price"));
         }
 
         try {
-            Sort.Direction sortDirection = searchRequest.isDescending() ?
-                    Sort.Direction.DESC : Sort.Direction.ASC;
+            Sort.Direction sortDirection = searchRequest.isDescending() ? Sort.Direction.DESC : Sort.Direction.ASC;
             Pageable pageable = PageRequest.of(
                     searchRequest.getPage(),
                     searchRequest.getSize(),
-                    Sort.by(sortDirection, searchRequest.getSortBy())
-            );
+                    Sort.by(sortDirection, searchRequest.getSortBy()));
 
-            Page<Product> productPage = productService.findWithFilters(
+            // Service에서 DTO를 직접 받음 - LazyInitializationException 방지
+            Page<ProductResponse> productPage = productService.findWithFiltersAsDto(
                     searchRequest.getCategoryId(),
                     searchRequest.getMinPrice(),
                     searchRequest.getMaxPrice(),
                     searchRequest.getKeyword(),
                     searchRequest.getSortBy(),
-                    pageable
-            );
-
-            List<ProductResponse> products = productDTOMapper.toSummaryResponseList(productPage.getContent());
+                    pageable);
 
             Map<String, Object> response = new HashMap<>();
-            response.put("products", products);
+            response.put("products", productPage.getContent());
             response.put("searchCriteria", searchRequest);
             response.put("currentPage", productPage.getNumber());
             response.put("totalItems", productPage.getTotalElements());
@@ -395,19 +379,18 @@ public class ProductController {
             response.put("hasPrevious", productPage.hasPrevious());
 
             return ResponseEntity.ok(
-                    ApiResponse.success("Advanced search completed", response)
-            );
+                    ApiResponse.success("Advanced search completed", response));
 
         } catch (Exception e) {
             logger.error("Advanced search failed: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    ApiResponse.error("Advanced search failed")
-            );
+                    ApiResponse.error("Advanced search failed"));
         }
     }
 
     /**
-     * Get Product by category
+     * Get Product by category - 수정됨
+     * Service에서 DTO를 직접 받아서 LazyInitializationException 방지
      *
      * @param categoryId category id
      * @param page       page number
@@ -428,15 +411,15 @@ public class ProductController {
                 categoryId, page, size);
 
         try {
-            Sort.Direction sortDirection = direction.equalsIgnoreCase("desc") ?
-                    Sort.Direction.DESC : Sort.Direction.ASC;
+            Sort.Direction sortDirection = direction.equalsIgnoreCase("desc") ? Sort.Direction.DESC
+                    : Sort.Direction.ASC;
             Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
 
-            Page<Product> productPage = productService.findByCategoryId(categoryId, pageable);
-            List<ProductResponse> products = productDTOMapper.toSummaryResponseList(productPage.getContent());
+            // Service에서 DTO를 직접 받음 - LazyInitializationException 방지
+            Page<ProductResponse> productPage = productService.findByCategoryIdAsDto(categoryId, pageable);
 
             Map<String, Object> response = new HashMap<>();
-            response.put("products", products);
+            response.put("products", productPage.getContent());
             response.put("categoryId", categoryId);
             response.put("currentPage", productPage.getNumber());
             response.put("totalItems", productPage.getTotalElements());
@@ -457,7 +440,8 @@ public class ProductController {
     }
 
     /**
-     * Get featured products
+     * Get featured products - 수정됨
+     * Service에서 DTO를 직접 받아서 LazyInitializationException 방지
      *
      * @return featured product list
      */
@@ -466,23 +450,22 @@ public class ProductController {
         logger.debug("Get featured products");
 
         try {
-            List<Product> featuredProducts = productService.findFeaturedProducts();
-            List<ProductResponse> products = productDTOMapper.toSummaryResponseList(featuredProducts);
+            // Service에서 DTO를 직접 받음 - LazyInitializationException 방지
+            List<ProductResponse> products = productService.findFeaturedProductsAsDto();
 
             return ResponseEntity.ok(
-                    ApiResponse.success("Featured products retrieved successfully", products)
-            );
+                    ApiResponse.success("Featured products retrieved successfully", products));
 
         } catch (Exception e) {
             logger.error("Failed to get featured products: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    ApiResponse.error("Failed to retrieve featured products")
-            );
+                    ApiResponse.error("Failed to retrieve featured products"));
         }
     }
 
     /**
-     * Latest product
+     * Latest product - 수정됨
+     * Service에서 DTO를 직접 받아서 LazyInitializationException 방지
      *
      * @param limit number of product
      * @return latest products list
@@ -494,18 +477,16 @@ public class ProductController {
         logger.debug("Get latest products: limit={}", limit);
 
         try {
-            List<Product> latestProducts = productService.findLatestProducts(limit);
-            List<ProductResponse> products = productDTOMapper.toSummaryResponseList(latestProducts);
+            // Service에서 DTO를 직접 받음 - LazyInitializationException 방지
+            List<ProductResponse> products = productService.findLatestProductsAsDto(limit);
 
             return ResponseEntity.ok(
-                    ApiResponse.success("Latest products retrieved successfully", products)
-            );
+                    ApiResponse.success("Latest products retrieved successfully", products));
 
         } catch (Exception e) {
             logger.error("Failed to get latest products: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    ApiResponse.error("Failed to retrieve latest products")
-            );
+                    ApiResponse.error("Failed to retrieve latest products"));
         }
     }
 
@@ -523,14 +504,12 @@ public class ProductController {
             List<ProductResponse> products = productDTOMapper.toSummaryResponseList(lowStockProducts);
 
             return ResponseEntity.ok(
-                    ApiResponse.success("Low stock products retrieved successfully", products)
-            );
+                    ApiResponse.success("Low stock products retrieved successfully", products));
 
         } catch (Exception e) {
             logger.error("Failed to get low stock products: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    ApiResponse.error("Failed to retrieve low stock products")
-            );
+                    ApiResponse.error("Failed to retrieve low stock products"));
         }
     }
 
@@ -553,19 +532,16 @@ public class ProductController {
             stockInfo.put("inStock", stockQuantity > 0);
 
             return ResponseEntity.ok(
-                    ApiResponse.success("Stock information retrieved successfully", stockInfo)
-            );
+                    ApiResponse.success("Stock information retrieved successfully", stockInfo));
 
         } catch (ProductNotFoundException e) {
             logger.warn("Product not found for stock check: id={}", id);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                    ApiResponse.error("Product not found")
-            );
+                    ApiResponse.error("Product not found"));
         } catch (Exception e) {
             logger.error("Failed to get product stock: id={}, error={}", id, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    ApiResponse.error("Failed to retrieve stock information")
-            );
+                    ApiResponse.error("Failed to retrieve stock information"));
         }
     }
 
@@ -584,19 +560,16 @@ public class ProductController {
 
             logger.info("Product activated successfully: id={}", id);
             return ResponseEntity.ok(
-                    ApiResponse.success("Product activated successfully")
-            );
+                    ApiResponse.success("Product activated successfully"));
 
         } catch (ProductNotFoundException e) {
             logger.warn("Product not found for activation: id={}", id);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                    ApiResponse.error("Product not found")
-            );
+                    ApiResponse.error("Product not found"));
         } catch (Exception e) {
             logger.error("Product activation failed: id={}, error={}", id, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    ApiResponse.error("Product activation failed")
-            );
+                    ApiResponse.error("Product activation failed"));
         }
     }
 
@@ -615,19 +588,16 @@ public class ProductController {
 
             logger.info("Product deactivated successfully: id={}", id);
             return ResponseEntity.ok(
-                    ApiResponse.success("Product deactivated successfully")
-            );
+                    ApiResponse.success("Product deactivated successfully"));
 
         } catch (ProductNotFoundException e) {
             logger.warn("Product not found for deactivation: id={}", id);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                    ApiResponse.error("Product not found")
-            );
+                    ApiResponse.error("Product not found"));
         } catch (Exception e) {
             logger.error("Product deactivation failed: id={}, error={}", id, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    ApiResponse.error("Product deactivation failed")
-            );
+                    ApiResponse.error("Product deactivation failed"));
         }
     }
 
@@ -649,18 +619,15 @@ public class ProductController {
             stats.put("totalProducts", totalProducts);
             stats.put("activeProducts", activeProducts);
             stats.put("inactiveProducts", inactiveProducts);
-            stats.put("activePercentage", totalProducts > 0 ?
-                    (double) activeProducts / totalProducts * 100 : 0);
+            stats.put("activePercentage", totalProducts > 0 ? (double) activeProducts / totalProducts * 100 : 0);
 
             return ResponseEntity.ok(
-                    ApiResponse.success("Product statistics retrieved successfully", stats)
-            );
+                    ApiResponse.success("Product statistics retrieved successfully", stats));
 
         } catch (Exception e) {
             logger.error("Failed to get product statistics: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    ApiResponse.error("Failed to retrieve product statistics")
-            );
+                    ApiResponse.error("Failed to retrieve product statistics"));
         }
     }
 
@@ -716,8 +683,7 @@ public class ProductController {
             ProductNotFoundException e) {
         logger.warn("Product not found: {}", e.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                ApiResponse.error("Product not found")
-        );
+                ApiResponse.error("Product not found"));
     }
 
     /**
@@ -728,8 +694,7 @@ public class ProductController {
             ProductAlreadyExistsException e) {
         logger.warn("Product already exists: {}", e.getMessage());
         return ResponseEntity.badRequest().body(
-                ApiResponse.error("Product already exists: " + e.getMessage())
-        );
+                ApiResponse.error("Product already exists: " + e.getMessage()));
     }
 
     /**
@@ -740,8 +705,7 @@ public class ProductController {
             InvalidProductDataException e) {
         logger.warn("Invalid product data: {}", e.getMessage());
         return ResponseEntity.badRequest().body(
-                ApiResponse.error("Invalid product data: " + e.getMessage())
-        );
+                ApiResponse.error("Invalid product data: " + e.getMessage()));
     }
 
     /**
@@ -752,8 +716,7 @@ public class ProductController {
             CategoryNotFoundException e) {
         logger.warn("Category not found: {}", e.getMessage());
         return ResponseEntity.badRequest().body(
-                ApiResponse.error("Category not found")
-        );
+                ApiResponse.error("Category not found"));
     }
 
     /**
@@ -764,8 +727,7 @@ public class ProductController {
             InsufficientStockException e) {
         logger.warn("Insufficient stock: {}", e.getMessage());
         return ResponseEntity.badRequest().body(
-                ApiResponse.error("Insufficient stock: " + e.getMessage())
-        );
+                ApiResponse.error("Insufficient stock: " + e.getMessage()));
     }
 
     /**
@@ -775,7 +737,6 @@ public class ProductController {
     public ResponseEntity<ApiResponse<String>> handleGeneralException(Exception e) {
         logger.error("Unexpected error in ProductController: {}", e.getMessage(), e);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                ApiResponse.error("Internal server error occurred")
-        );
+                ApiResponse.error("Internal server error occurred"));
     }
 }
