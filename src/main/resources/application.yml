@@ -108,3 +108,23 @@ voyagia:
       host: "postgres"
     redis:
       host: "redis"
+
+# AWS S3 Configuration
+aws:
+  s3:
+    bucket-name: "${AWS_S3_BUCKET_NAME:voyagia-product-images-dev}"
+    region: "${AWS_REGION:ap-northeast-2}"
+    access-key: "${AWS_ACCESS_KEY_ID:}"
+    secret-key: "${AWS_SECRET_ACCESS_KEY:}"
+
+# File Upload Configuration
+app:
+  file:
+    upload:
+      max-file-size: "${MAX_FILE_SIZE:10MB}"
+      max-request-size: "${MAX_REQUEST_SIZE:10MB}"
+      allowed-extensions: "${ALLOWED_EXTENSIONS:jpg,jpeg,png,gif,webp}"
+      image-sizes:
+        thumbnail: "${THUMBNAIL_SIZE:150x150}"
+        medium: "${MEDIUM_SIZE:500x500}"
+        large: "${LARGE_SIZE:1200x1200}"
